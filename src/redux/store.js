@@ -1,37 +1,46 @@
-import { legacy_createStore as createStore } from "redux";
-import { devToolsEnhancer } from "@redux-devtools/extension";
-const initialState = {
-    tasks: [
-      { id: 0, text: "Learn HTML and CSS", completed: true },
-      { id: 1, text: "Get good at JavaScript", completed: true },
-      { id: 2, text: "Master React", completed: false },
-      { id: 3, text: "Discover Redux", completed: false },
-      { id: 4, text: "Build amazing apps", completed: false },
-    ],
-    filters: {
-      status: "all",
-    },
-   };
-   const rootReducer = (state = initialState, action) => {
-    switch (action.type) {
-        case 'tasks/addTask':
-            return {
-                ...state,
-                tasks: [...state.tasks, action.payload]  
+import { configureStore,createSlice } from "@reduxjs/toolkit";
+import storage from "redux-persist/lib/storage";
+import {persistReducer,persistStore} from "redux-persist";
+import { nanoid } from "@reduxjs/toolkit";
+const initialState={
+    contacts:[],
+    filter:''
+}
+const rootReducer=createSlice({
+    name:'contacts',
+    initialState:initialState,
+    reducers:{
+        add:{reducer(state,action){state.contacts.push({name:action.payload.name,number:action.payload.number,id:action.payload.id})},prepare(name,number){
+            return{
+                payload:{
+                    id:nanoid(),
+                    name:name,
+                    number:number
+                }
             }
-        case 'delete':
-          return{...state,tasks:state.tasks.filter(el=>el.id!==action.payload.id)}
-        case 'all':
-          return{...state,filters:{status:'all'}}
-        case 'active':
-          return{...state,filters:{status:'active'}}
-        case 'completed':
-          return{...state,filters:{status:'completed'}}
-        case 'chnCompl':
-          return{...state,tasks:state.tasks.map(el=>el.id===action.payload.id?{...el,completed:!el.completed}:el)}
-        default:
-            return state;
-    } 
-};
-const enhancer = devToolsEnhancer();
-export const store=createStore(rootReducer,enhancer)
+        }},
+        deleteE:{reducer(state,action){state.contacts=state.contacts.filter(el=>el.id!==action.payload.id)},prepare(id){
+            return{
+                payload:{
+                    id:id,
+                }
+            }
+        }},
+        changeFilter:{reducer(state,action){state.filter=action.payload.filter},prepare(newFilter){
+            return{
+                payload:{
+                    filter:newFilter
+                }
+            }        
+        }}
+    }
+})
+const config={
+    key:'root',
+    storage,
+    whitelist: ['contacts','filter']
+}
+const persReducer=persistReducer(config,rootReducer.reducer);  
+export const {add,deleteE,changeFilter}=rootReducer.actions
+export const store=configureStore({reducer:persReducer})
+export const pers=persistStore(store)
